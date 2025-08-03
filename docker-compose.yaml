@@ -1,0 +1,71 @@
+name: cv_sumarizer
+
+services:
+  api:
+    container_name: cv-summarizer-fastapi
+    build: ./api
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
+    ports:
+      - "8000:8000"
+    volumes:
+    - temporary_data:/tmp
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - rabbitmq
+    networks:
+      - summarizer_network
+
+  rabbitmq:
+    container_name: summarizer-rabbitmq
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - summarizer_network
+
+  celery_worker:
+    container_name: summarizer-celery-worker
+    build: ./api
+    command: celery --app worker.config.app worker --loglevel=info --pool=solo
+    volumes:
+    - temporary_data:/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A worker inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
+    depends_on:
+      - rabbitmq
+    networks:
+      - summarizer_network
+
+networks:
+  summarizer_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  rabbitmq_data:
+  temporary_data:

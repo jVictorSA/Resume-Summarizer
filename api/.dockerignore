@@ -1,0 +1,64 @@
+# ----- Version control -----
+.git
+.gitignore
+.gitattributes
+
+# ----- Docker files (not needed in the image) -----
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# ----- Bytecode / compiled files -----
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+*.pyd
+
+# ----- Distribution / packaging artifacts -----
+.build
+build/
+dist/
+downloads/
+eggs/
+parts/
+sdist/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ----- Virtual environments -----
+.env
+.venv/
+venv/
+env/
+ENV/
+
+# ----- Dependency caches -----
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ----- Testing, coverage, logs -----
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.log
+
+# ----- IDE / editor files -----
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+__pycache__/
+*.swp
+*.bak
+
+# ----- OS/system metadata -----
+.DS_Store
+Thumbs.db
