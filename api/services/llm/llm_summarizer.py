@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from pydantic import BaseModel
 from instructor import from_gemini
@@ -8,6 +9,9 @@ from core.config import env_config
 from services.llm.retry import retry_strategy
 from schemas.summarization_schemas import Summary, CVsAnalysis
 from services.llm.prompts import CV_SUMMARY_PROMPT, CV_RANKING_PROMPT
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class GeminiLLM():
     def __init__(self) -> None:
@@ -23,8 +27,9 @@ class GeminiLLM():
         
 
     @retry_strategy
-    def llm_interaction(self, system_prompt: str, user_prompt: str, response_schema: BaseModel):
+    def llm_interaction(self, request_id: str, system_prompt: str, user_prompt: str, response_schema: BaseModel):
         try:
+            logger.info(f"\n{'='*80}\nGENERATING LLM RESPONSE - GEMINI LLM LLM_INTERACTION\nrequest id: {request_id}\n{'='*80}")
             response = self.client.messages.create(
                 messages=[
                     {
@@ -36,36 +41,40 @@ class GeminiLLM():
                         "content": user_prompt
                     },
                 ],
-                response_model=response_schema
-                
+                response_model=response_schema   
             )
 
             return response
         
         except Exception as e:
+            logger.critical(f"\n{'='*80}\nEXCEPTION - GEMINI LLM LLM_INTERACTION\nrequest id: {request_id}\n{e}\n{'='*80}")
             raise e
         
 
-    def summarize_cv_texts(self, cv_text: str):
+    def summarize_cv_texts(self, request_id: str, cv_text: str):
         try:
-            print(f"{'='*80}\nSummarizando Currículo com LLM\n{'='*80}")
+            logger.info(f"\n{'='*80}\nSUMMARIZING CV - GEMINI LLM SUMMARIZE_CV_TEXTS\nrequest id: {request_id}\n{'='*80}")
             return self.llm_interaction(
+                request_id,
                 system_prompt=CV_SUMMARY_PROMPT,
                 user_prompt=f"Summarize the given CV text: \n\n\"{cv_text}\"",
                 response_schema=Summary
             )
         
         except Exception as e:
+            logger.critical(f"\n{'='*80}\nEXCEPTION - GEMINI LLM SUMMARIZE_CV_TEXTS\nrequest id: {request_id}\n{e}\n{'='*80}")
             raise e
 
-    def rank_cvs(self, role_description: str, cvs_text: List[str]):
+    def rank_cvs(self, request_id: str, role_description: str, cvs_text: List[str]):
         try:
-            print(f"{'='*80}\nRankeando Currículo com LLM\n{'='*80}")
+            logger.info(f"\n{'='*80}\nRANKING CVS - GEMINI LLM RANK_CVS\nrequest id: {request_id}\n{'='*80}")
             return self.llm_interaction(
+                request_id,
                 system_prompt=CV_RANKING_PROMPT,
                 user_prompt=f"Given the following \"Role description\" and \"CVs texts\", provide an analysis and rank them all: \n\n\"Role description\":\n{role_description}\n\n\"CVs texts\":\n\"{cvs_text}\"",
                 response_schema=CVsAnalysis
             )
         
         except Exception as e:
+            logger.critical(f"\n{'='*80}\nEXCEPTION - GEMINI LLM RANK_CVS\nrequest id: {request_id}\n{e}\n{'='*80}")
             raise e

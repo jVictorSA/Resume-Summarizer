@@ -1,19 +1,28 @@
 from worker.config import app
-from schemas.summarization_schemas import Summary, CVsAnalysis, SummaryResponse, CVsAnalysisResponse, SummaryAndAnalysis
+from core.database import MongoDBManager
 from services.llm.llm_summarizer import GeminiLLM
+from repositories.logs_repository import LogRepository
+from models.logs import CVsAnalysisLogs
+from models.process_status_enum import ProcessStatusEnum
+from schemas.log_schemas import UpdateLogSchema
+from schemas.summarization_schemas import Summary, CVsAnalysis, SummaryResponse, CVsAnalysisResponse, SummaryAndAnalysis
 
 import re
 import os
 import time
+import asyncio
+import logging
 import pytesseract
 from PIL import Image
-from io import BytesIO
 from pypdf import PdfReader
+from datetime import datetime
 from typing import Optional, List
-from fastapi import UploadFile, File
 
-def extract_pdf_text(file: str) -> str | None:
-    print(f"{'='*80}\nExtraindo documento: {file}\n{'='*80}")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def extract_pdf_text(request_id:str, file: str) -> str | None:
+    logger.info(f"\n{'='*80}\nEXTRACTING PDFS TEXT - WORKER EXTRACT_PDF_TEXT\nrequest id: {request_id}\n{'='*80}")
     try:
         reader = PdfReader(file)
 
@@ -28,15 +37,14 @@ def extract_pdf_text(file: str) -> str | None:
 
         return extracted_text
     except Exception as e:
-        print(f"{'='*80}\nEXCEPTION - extract_pdf_text\n{e}\n{'='*80}")
+        logger.critical(f"\n{'='*80}\nEXCEPTION - WORKER EXTRACT_PDF_TEXT\nrequest id: {request_id}{e}\n{'='*80}")
         raise e
 
-def extract_image_text(filepaths: List[str]):
-    print(f"{'='*80}\nExtraindo texto de imagens\n{'='*80}")
+def extract_image_text(request_id:str, filepaths: List[str]):
+    logger.info(f"\n{'='*80}\nEXTRACTING IMAGES TEXT - WORKER EXTRACT_IMAGE_TEXT\nrequest id: {request_id}\n{'='*80}")
     try:
         images_text = []
         for image in filepaths:
-            print(f"{'='*80}\nExtraindo texto de imagem: {image}\n{'='*80}")
             pytesseract_config = '--oem 3 -l por+eng'
             image = Image.open(image)
             image_text = pytesseract.image_to_string(image, config=pytesseract_config)
@@ -48,16 +56,15 @@ def extract_image_text(filepaths: List[str]):
         return extracted_text
 
     except Exception as e:
-        print(f"{'='*80}\nEXCEPTION - extract_image_text\n{e}\n{'='*80}")
+        logger.critical(f"\n{'='*80}\nEXCEPTION - WORKER EXTRACT_IMAGE_TEXT\nrequest id: {request_id}\n{e}\n{'='*80}")
         raise e
 
-def group_image_cvs(images_files: List[str]) -> dict:
+def group_image_cvs(request_id: str, images_files: List[str]) -> dict:
+    logger.info(f"\n{'='*80}\nGROUPING IMAGES - WORKER GROUP_IMAGE_CVS\nrequest id: {request_id}\n{'='*80}")
     same_cv_images = {}
 
-    print(f"{'='*80}\nSeparando imagens\n{'='*80}")
     for filepath in images_files:
         image_filename = filepath[5:25]
-        print(f"{'='*80}\nFilepaths: {filepath} - {image_filename}\n{'='*80}")
 
         if image_filename in same_cv_images:
             same_cv_images[image_filename].append(filepath)
@@ -68,39 +75,47 @@ def group_image_cvs(images_files: List[str]) -> dict:
     return same_cv_images
 
 @app.task
-def summarize_cv(pdf_files: List[str], image_files: List[str], query: Optional[str] = None) -> dict:
+def summarize_cv(
+    request_id: str,
+    pdf_files: List[str],
+    image_files: List[str],
+    query: Optional[str] = None
+) -> None:
     start_time = time.monotonic()
     try:
+        logger.info(f"\n{'='*80}\nINITIALIZING WORKER TASK - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
+        log_repository: LogRepository = LogRepository()
         gemini_service = GeminiLLM()
+        loop = asyncio.get_event_loop()
+        log_entry = loop.run_until_complete(log_repository.get_by_id(request_id, request_id))
 
-        print(f"{'='*80}\nSumarizando documentos\n{'='*80}")
-        print(f"{'='*80}\nRole description:\n{query}\n\n{'='*80}")
+        logger.info(f"\n{'='*80}\nGROUPING SIMILAR IMAGE FILES - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
+        
         cvs_texts = []
         cvs_summaries = []
         cvs_analysis = []
 
-        same_cv_images = group_image_cvs(image_files)
+        same_cv_images = group_image_cvs(request_id, image_files)
 
-        print(f"{'='*80}\nExtraindo textos de pdfs\n{'='*80}")
+        logger.info(f"\n{'='*80}\nEXTRACTING PDF TEXTS - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
         for filepath in pdf_files:
-            cvs_texts.append(extract_pdf_text(filepath))
+            cvs_texts.append(extract_pdf_text(request_id, filepath))
 
-        print(f"{'='*80}\nExtraindo textos de imagens\n{'='*80}")
+        logger.info(f"\n{'='*80}\nEXTRACTING IMAGE TEXTS - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
         for filepaths in same_cv_images.values():
-            print(f"{'='*80}\n same_cv_images Filepaths: {filepaths}\n{'='*80}")
-            cvs_texts.append(extract_image_text(filepaths))
+            cvs_texts.append(extract_image_text(request_id, filepaths))
             
-        print(f"{'='*80}\nTextos extraídos\nSummarizando currículos:\n")
+        logger.info(f"\n{'='*80}\nSUMMARIZING CVS - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
         for cv in cvs_texts:
-            cv_summary: Summary = gemini_service.summarize_cv_texts(cv)
+            cv_summary: Summary = gemini_service.summarize_cv_texts(request_id, cv)
             cvs_summaries.append(cv_summary)
-            print(f"{'='*80}\n{cv_summary}\n{'='*80}")
-        print(f"\n{'='*80}")
         
-        if query is not None:
-            print(f"{'='*80}\nRankeando CVs\n{'='*80}")
-            cvs_ranking: CVsAnalysis = gemini_service.rank_cvs(query, cvs_summaries)
+        if query != "":
+            logger.info(f"\n{'='*80}\nRANKING CVS - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
+            cvs_ranking: CVsAnalysis = gemini_service.rank_cvs(request_id, query, cvs_summaries)
 
+
+            logger.info(f"\n{'='*80}\nGROUPING SUMMARIES AND RANKING DATA ON CVS ANALYSIS DATA TYPE - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
             for summary_item, cv_analysis_item in zip(cvs_summaries, cvs_ranking.summaries):
                 combined_item = SummaryAndAnalysis(
                     summary=summary_item.summary,
@@ -120,18 +135,52 @@ def summarize_cv(pdf_files: List[str], image_files: List[str], query: Optional[s
                 cvs_analysis=cvs_analysis
             )
 
+
+            logger.info(f"\n{'='*80}\nSORTING CVS ANALYSIS BY SCORE - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
             cvs_ranking_response.cvs_analysis.sort(
                 key=lambda cv_analysis: cv_analysis.ranking_score,
-                reverse=True,
-
+                reverse=True
             )
 
-            return cvs_ranking_response.model_dump_json()
+            logger.info(f"\n{'='*80}\nUPDATING CVS ANALYSIS LOG - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
 
-        return SummaryResponse(summaries=cvs_summaries).model_dump_json()
+            log_update_data: UpdateLogSchema = UpdateLogSchema(
+                updated_at=datetime.utcnow(),
+                result=cvs_ranking_response,
+                status=ProcessStatusEnum.SUCCESS
+            )
+
+            loop.run_until_complete(log_repository.update(request_id, log_entry, log_update_data))
+        
+        else:
+            logger.info(f"\n{'='*80}\nORGANIZING AND SORTING CVS SUMMARIES BY SCORE - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
+            summaries: SummaryResponse = SummaryResponse(summaries=cvs_summaries)
+            summaries.summaries.sort(
+                key=lambda cv_summary: cv_summary.score,
+                reverse=True
+            )
+            
+            logger.info(f"\n{'='*80}\nUPDATING CVS SUMMARIES LOG - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")
+
+            log_update_data: UpdateLogSchema = UpdateLogSchema(
+                updated_at=datetime.utcnow(),
+                result=summaries,
+                status=ProcessStatusEnum.SUCCESS
+            )
+
+            loop.run_until_complete(log_repository.update(request_id, log_entry, log_update_data))
     
     except Exception as e:
-        print(f"{'='*80}\nEXCEPTION - summarize_cv\n{e}\n{'='*80}")
+        logger.critical(f"\n{'='*80}\nEXCEPTION - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{e}\n{'='*80}")
+        
+        log_entry = loop.run_until_complete(log_repository.get_by_id(request_id, request_id))
+        log_update_data: UpdateLogSchema = UpdateLogSchema(
+            result=None,
+            status=ProcessStatusEnum.FAILED
+        )
+
+        loop.run_until_complete(log_repository.update(request_id, log_entry, log_update_data))
+
         raise e
 
     finally:
@@ -143,4 +192,4 @@ def summarize_cv(pdf_files: List[str], image_files: List[str], query: Optional[s
             if os.path.exists(filepath):
                 os.remove(filepath)
 
-        print(f"Processed {len(cvs_texts)} CVs in {time.monotonic()-start_time:.2f}s")
+        logger.info(f"\n{'='*80}\nPROCESSED CVS IN {time.monotonic()-start_time:.2f}s - WORKER SUMMARIZE_CV\nrequest id: {request_id}\n{'='*80}")

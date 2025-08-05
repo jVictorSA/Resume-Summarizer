@@ -7,3 +7,5 @@ class ConfigClass(BaseModel):
     RABBITMQ_DEFAULT_PASS: str
     RABBITMQ_DEFAULT_HOST: str
     RABBITMQ_DEFAULT_PORT: str
+    MONGODB_URL: str
+    MONGODB_DB_NAME: str
