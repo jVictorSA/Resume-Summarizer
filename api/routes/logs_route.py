@@ -22,6 +22,64 @@ async def create_log(
     status: ProcessStatusEnum,
     query: Optional[str] = None
 ) -> PublicLogSchema:
+    """
+    Route for creating Summarization/Analysis log of CVs. 
+
+    Input:
+
+    - result: SummaryResponse | CVsAnalysisResponse - Result of CV Summarization or Analysis. See interative schema for type definition.
+    - user_id: int -  User id.
+    - status: ProcessStatusEnum - Enum concerning the status of log.
+    - query: Optional[str] - User query stating what the user wants the LLM to analyze on the CVs.
+
+
+    Return value if you pass SummaryResponse type on result:  
+    {  
+        "created_at": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "updated_at": None,  
+        "request_id": "string",  
+        "user_id": 0,  
+        "timestamp": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "query": "string",  
+        "result": {  
+            "summaries": [  
+                {  
+                    "summary": "string",  
+                    "strong_points": ["string"],  
+                    "weak_points": ["string"],  
+                    "score": 1  
+                }  
+            ]  
+        },  
+        "status": "PENDING"  
+    }  
+  
+    Return value if you pass CVsAnalysisResponse type on result:  
+    {  
+        "created_at": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "updated_at": None,  
+        "request_id": "string",  
+        "user_id": 0,  
+        "timestamp": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "query": "string",  
+        "result": {  
+            "cvs_analysis_process": "string",  
+            "cvs_analysis": [  
+                {  
+                    "cv_analysis": "string"  
+                    "summary": "string",  
+                    "strong_points": ["string"],  
+                    "weak_points": ["string"],  
+                    "why_it_fits": ["string"],  
+                    "things_to_watch_out": ["string"],  
+                    "ranking_score": "string"  
+                }  
+            ]  
+        },  
+        "status": "PENDING"  
+    }
+    """
+
     try:
         request_id = request.state.request_id        
         logger.info(f"\n{'='*80}\nRECEIVING REQUEST - LOG ROUTE CREATE\nrequest id: {request_id}\n{'='*80}")
@@ -57,6 +115,32 @@ async def create_log(
 
 @logs_router.get("/logs/paginated")
 async def get_all_logs_paginated(request: Request, skip: int = 0, limit: int = 10) -> List[PublicLogSchema]:
+    """
+    Route for retrieving CVs logs paginated by skip. 
+
+    Input:
+
+    - skip: int - Number of entries skipped before returning the page.
+    - limit: int - Page limit of entries.
+    
+
+    Return value:  
+    [  
+        {  
+            "created_at": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+            "updated_at": None,  
+            "request_id": "string",  
+            "user_id": 0,  
+            "timestamp": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+            "query": "string",  
+            "result": {  
+                SummaryResponse | CVsAnalysisResponse
+            },  
+            "status": "PENDING"  
+        }  
+    ]
+    """
+
     try:
         logger.info(f"\n{'='*80}\nRETRIEVING LOG DATA PAGINATED - LOG ROUTE GET ALL PAGINATED\nrequest id: {request.state.request_id}\n{'='*80}")
         return await LogRepository.get_all_paginated(request.state.request_id, skip, limit)
@@ -66,6 +150,29 @@ async def get_all_logs_paginated(request: Request, skip: int = 0, limit: int = 1
 
 @logs_router.get("/logs/{request_id}")
 async def get_log_by_id(request: Request, request_id: str) -> PublicLogSchema:
+    """
+    Route for retrieving log of CVs by request_id. 
+
+    Input:
+
+    - request_id: str - Request Id of the request that created the log.
+
+    
+    Return value:  
+    {  
+        "created_at": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "updated_at": None,  
+        "request_id": "string",  
+        "user_id": 0,  
+        "timestamp": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "query": "string",  
+        "result": {  
+            SummaryResponse | CVsAnalysisResponse
+        },  
+        "status": "PENDING"  
+    }  
+    """
+
     try:
         logger.info(f"\n{'='*80}\nRETRIEVING LOG DATA BY ID - LOG ROUTE GET LOG BY ID\nrequest id: {request.state.request_id}\n{'='*80}")
         return await LogRepository.get_by_id(request.state.request_id, request_id)
@@ -75,6 +182,31 @@ async def get_log_by_id(request: Request, request_id: str) -> PublicLogSchema:
 
 @logs_router.post("/logs/search/")
 async def search_entries(request: Request, query: str) -> List[PublicLogSchema]:
+    """
+    Route for retrieving CVs logs based on query attribute search. 
+
+    Input:
+
+    - query: str - Search string that will be searched on the query attribute on the database log entries.
+    
+
+    Return value:  
+    [  
+        {  
+            "created_at": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+            "updated_at": None,  
+            "request_id": "string",  
+            "user_id": 0,  
+            "timestamp": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+            "query": "string",  
+            "result": {  
+                SummaryResponse | CVsAnalysisResponse
+            },  
+            "status": "PENDING"  
+}  
+    ]
+    """
+
     try:
         logger.info(f"\n{'='*80}\nTEXT SEARCHING LOG DATA - LOG ROUTE SEARCH ENTRIES\nrequest id: {request.state.request_id}\n{'='*80}")
         return await LogRepository.search(request.state.request_id, query)
