@@ -109,22 +109,33 @@ A seguir, seguem os outputs (em JSON) das análises dos currículos, a depender 
 ```mermaid
 sequenceDiagram
     participant User
+<<<<<<< HEAD
     participant Middleware
+=======
+>>>>>>> 66816f61931b4ffed8f083a4084b028d404c3733
     participant API as API Endpoint
     participant RabbitMQ
     participant Worker as Celery Worker
     participant MongoDB
     participant Gemini
 
+<<<<<<< HEAD
     User->>Middleware: POST /summarize (files, query?)
     Middleware->>Middleware: Criação de request_id usando uuid4
     Middleware->>API: Propagando request para Endpoint
+=======
+    User->>API: POST /summarize (files, query?)
+>>>>>>> 66816f61931b4ffed8f083a4084b028d404c3733
     API->>API: Validação dos dados recebidos
     API->>API: Salva arquivos em /tmp/
     API->>RabbitMQ: Enfileira task (request_id, file_paths, query)
     API->>MongoDB: Salva log pendente no banco de dados
+<<<<<<< HEAD
     API->>Middleware: Propaga retorno do endpoint para usuário
     Middleware->>User: Retorna log para usuário: { request_id, status, etc }
+=======
+    API->>User: Retorna log para usuário: { request_id, status, etc }
+>>>>>>> 66816f61931b4ffed8f083a4084b028d404c3733
 
     RabbitMQ->>Worker: Processa task
     Worker->>Worker: Agrupa imagens por similaridade de nome
