@@ -21,6 +21,34 @@ async def summarize_cvs(
     user_id: int = Form(...),
     files: List[UploadFile] = File(...)
 ) -> PublicLogSchema:
+    """
+    Route for asynchronous Summarization/Analysis of CVs. 
+    
+    Providing a query will trigger the summarization and subsenquently Analysis and Ranking of the CVs.
+    Not providing a query, on the other hand, only the triggers the summarization of the CVs.
+
+    An object containing the request_id of this request will be returned. This request_id can be used for retrieving the asynchronous task.
+
+    Input:
+
+    - query: Optional[str] - User query stating what the user wants the LLM to analyze on the CVs. Not sending query is equivalent to only ask for CVs summarization.
+    - user_id: int - User id.
+    - files: List[UploadFile] - PDF, JPG, JPEG or PNG files of applicant CVs. If you pass other files than these cited they will not be processed
+
+
+    Return value:  
+    {  
+        "created_at": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "updated_at": None,  
+        "request_id": "string",  
+        "user_id": "string",  
+        "timestamp": "YYYY-MM-DDTMM:MM:SS.mmZ",  
+        "query": "string",  
+        "result": None,  
+        "status": "PENDING"  
+    }
+    """
+
     try: 
         log_repository: LogRepository = LogRepository()
         temp_file_storage = "/tmp/"
