@@ -165,7 +165,9 @@ sequenceDiagram
 <br>
 
 ## Como executar o projeto
-Para executar o projeto mais facilmente, é necessário ter o [Docker](https://docs.docker.com) instalado, após clonar este repositório, use o arquivo ```./api/.env.example``` para definir as variáveis de ambiente:
+Para executar o projeto mais facilmente, é necessário ter o [Docker](https://docs.docker.com) instalado.  
+<br>
+Então, após clonar este repositório, use o arquivo ```./api/.env.example``` para definir as variáveis de ambiente:
 <br>
 <br>
 
@@ -194,7 +196,7 @@ Após isso, execute no terminal na pasta raiz do projeto:
 docker compose up --build -d
 ```
 
-Então, acesse o endpoint ```localhost:8000/docs```, e interaga com a API pela interface SwaggerUI
+Então, acesse o endpoint ```localhost:8000/docs```, e interaja com a API pela interface SwaggerUI
 <br>
 <br>
 
