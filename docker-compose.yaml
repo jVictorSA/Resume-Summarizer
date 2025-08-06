@@ -18,10 +18,23 @@ services:
       retries: 3
       start_period: 10s
     depends_on:
+      - mongodb
       - rabbitmq
     networks:
       - summarizer_network
 
+  mongodb:
+    image: mongo:8.0.12
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    env_file:
+      ./api/.env
+    networks:
+      - summarizer_network
+  
   rabbitmq:
     container_name: summarizer-rabbitmq
     image: rabbitmq:3-management-alpine
@@ -38,6 +51,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    depends_on:
+      - mongodb
     networks:
       - summarizer_network
 
@@ -69,3 +84,4 @@ volumes:
   mongo_data:
   rabbitmq_data:
   temporary_data:
+  mongodb_data:
