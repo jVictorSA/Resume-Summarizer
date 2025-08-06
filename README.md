@@ -152,15 +152,15 @@ sequenceDiagram
 
 ## Tecnologias utilizadas
 - [FastAPI](https://fastapi.tiangolo.com) - Framework web Python assíńcrono moderno, com integração nativa com Pydantic.
-- [Pydantic](https://docs.pydantic.dev/latest/) - Biblioteca de validação de dados, garantindo a tipagem correta de dados. Pydantic link
-- [Celery](https://docs.celeryq.dev/en/stable/) - Celery é um sistema de enfileiramento de tarefas distribuído escrito em Python. Celery link
-- [RabbitMQ](https://www.rabbitmq.com) - Broker de mensagens confiável que enfileira tarefas de processamento assíncronas. RabbitMQ link
-- [MongoDB](https://www.mongodb.com) - Banco de dados NoSQL flexível e escalável. MongoDB link
-- [Beanie](https://beanie-odm.dev) - Um ODM (Object Document Mapper) assíncrono para o MongoDB via Motor. Beanie link
-- [Google Gemini](gemini.google.com) - Modelo de IA Generativa criada pelo Google. Gemini link
-- [Instructor](https://useinstructor.com) - Biblioteca que transforma saídas de LLMs em objetos estruturados validados via Pydantic. Instructor Link
-- [Pypdf](https://pypdf.readthedocs.io/en/stable/) - Extrai texto de arquivos PDF de forma simples e direta. Pypdf link
-- [Pytesseract](https://github.com/madmaze/pytesseract) - Biblioteca para conversão de imagens em texto via OCR. Pytesseract link
+- [Pydantic](https://docs.pydantic.dev/latest/) - Biblioteca de validação de dados, garantindo a tipagem correta de dados.
+- [Celery](https://docs.celeryq.dev/en/stable/) - Celery é um sistema de enfileiramento de tarefas distribuído escrito em Python.
+- [RabbitMQ](https://www.rabbitmq.com) - Broker de mensagens confiável que enfileira tarefas de processamento assíncronas.
+- [MongoDB](https://www.mongodb.com) - Banco de dados NoSQL flexível e escalável.
+- [Beanie](https://beanie-odm.dev) - Um ODM (Object Document Mapper) assíncrono para o MongoDB via Motor.
+- [Google Gemini](gemini.google.com) - Modelo de IA Generativa criada pelo Google.
+- [Instructor](https://useinstructor.com) - Biblioteca que transforma saídas de LLMs em objetos estruturados validados via Pydantic.
+- [Pypdf](https://pypdf.readthedocs.io/en/stable/) - Extrai texto de arquivos PDF de forma simples e direta.
+- [Pytesseract](https://github.com/madmaze/pytesseract) - Biblioteca para conversão de imagens em texto via OCR.
 <br>
 <br>
 
